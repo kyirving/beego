@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"myBeego/components"
+	"myBeego/components/redis"
+	"myBeego/components/utils"
 	_ "myBeego/routers"
 
 	"github.com/astaxie/beego"
@@ -30,9 +32,18 @@ func init() {
 	orm.RegisterDataBase("default", "mysql", dbcon)
 
 	//初始化redis
-	components.Rdb = components.ConnectRedisPool()
+	redis.Rdb = redis.ConnectRedisPool()
+}
+
+var Filter = func(ctx *context.Context) {
+	fmt.Println(ctx)
 }
 
 func main() {
+
+	// 路由过滤
+	filter := &utils.Filter{}
+	beego.InsertFilter("/user/*", beego.BeforeRouter, filter.FilterLoginStatus())
+
 	beego.Run("127.0.0.1:8080")
 }
