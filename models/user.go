@@ -13,9 +13,25 @@ const (
 	STATUS_EXCEPTION = 3
 )
 
+// 定义一个struct用来保存表单数据
+// 通过给字段设置tag， 指定表单字段名， - 表示忽略这个字段不进行赋值
+// 默认情况下表单字段名跟struct字段名同名（小写）
+type LoginParam struct {
+	Username string `form:"username"`
+	Password string `form:"password"`
+}
+
+type LoginResMsg struct {
+	UserId        int    `json:"userId"`
+	AccessToken   string `json:"accessToken"`
+	AccessExpire  int64  `json:"accessExpire"`
+	RefreshToken  string `json:"refreshToken"`
+	RefreshExpire int64  `json:"refreshExpire"`
+}
+
 type User struct {
 	Id           int       `json:"id"`
-	Username     string    `json:"userName" orm:"not null"`
+	Username     string    `json:"userName"`
 	PasswordHash string    `json:"password_hash"`
 	Email        string    `json:"email"`
 	Status       int       `json:"status"`

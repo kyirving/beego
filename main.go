@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"myBeego/components"
 	_ "myBeego/routers"
 
 	"github.com/astaxie/beego"
@@ -27,6 +28,9 @@ func init() {
 	fmt.Println(dbcon)
 
 	orm.RegisterDataBase("default", "mysql", dbcon)
+
+	//初始化redis
+	components.Rdb = components.ConnectRedisPool()
 }
 
 func main() {
