@@ -5,6 +5,8 @@ import (
 	"myBeego/components/redis"
 	"myBeego/components/utils"
 	"myBeego/models"
+	"os"
+	"path"
 	"strconv"
 	"time"
 
@@ -128,6 +130,7 @@ func (this *UserController) Register() {
 		PasswordHash: passwordHash,
 		Email:        email,
 		Status:       models.STATUS_SUCC,
+		Photo:        "static/img/default.jpeg",
 		// Ctime:        time.Now().Format("2006-01-02 03:04:05"),
 		// Uptime:       time.Now().Format("2006-01-02 03:04:05"),
 	}
@@ -177,7 +180,7 @@ func (this *UserController) List() {
 }
 
 /*
-	刷新token
+刷新token
 */
 func (this *UserController) RefreshToken() {
 
@@ -246,5 +249,83 @@ func (this *UserController) RefreshToken() {
 
 	this.Data["json"] = resp.Success("token刷新成功", LoginResMsg)
 	this.ServeJSON()
+	return
+}
 
+//更新头像
+func (this *UserController) EditPhoto() {
+
+	var (
+		o    = orm.NewOrm()
+		resp = &utils.Response{}
+	)
+	userId, _ := this.GetInt("userid")
+	user := models.User{
+		Id: userId,
+	}
+	err := o.Read(&user)
+	if err != nil {
+		this.Data["json"] = resp.Error(utils.RESP_NOT_FOUND, "用户不存在")
+		this.ServeJSON()
+		return
+	}
+
+	file, header, err := this.GetFile("file")
+	if err != nil {
+		this.Data["json"] = resp.Error(utils.RESP_SYSTEM_BUSY, "文件获取失败")
+		this.ServeJSON()
+		return
+	}
+	defer file.Close()
+
+	//文件格式判断
+	fileExt := path.Ext(header.Filename)
+	if fileExt != ".jpg" && fileExt != ".png" && fileExt != ".jpeg" {
+		this.Data["json"] = resp.Error(utils.RESP_SUCC, "上传文件格式不正确")
+		this.ServeJSON()
+		return
+	}
+
+	time := time.Now()
+	year := time.Year()
+	month := time.Month()
+	day := time.Day()
+	directory := "static/img/photo/%d/%d/%d/"
+	directory = fmt.Sprintf(directory, year, month, day)
+
+	//目录不存在，则创建
+	_, err = os.Stat(directory)
+	if err != nil {
+		if err = os.MkdirAll(directory, 0777); err != nil {
+			beego.Error("os.MkdirAll err = ", err)
+			this.Data["json"] = resp.Error(utils.RESP_SUCC, "创建目录失败")
+			this.ServeJSON()
+			return
+		}
+	}
+
+	filename := fmt.Sprintf("%s%d%s", directory, time.Unix(), fileExt)
+
+	err = this.SaveToFile("file", filename)
+	if err != nil {
+		beego.Error(err)
+		this.Data["json"] = resp.Error(utils.RESP_SUCC, "上传文件失败")
+		this.ServeJSON()
+		return
+	}
+
+	//更新数据库
+	user.Photo = filename
+	if _, err := o.Update(&user); err != nil {
+
+		beego.Error("o.Update err = ", err)
+
+		this.Data["json"] = resp.Error(utils.RESP_SYSTEM_BUSY, "修改失败")
+		this.ServeJSON()
+		return
+	}
+
+	this.Data["json"] = resp.Error(utils.RESP_SUCC, "修改头像成功")
+	this.ServeJSON()
+	return
 }

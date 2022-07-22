@@ -34,6 +34,7 @@ type User struct {
 	Username     string    `json:"userName"`
 	PasswordHash string    `json:"password_hash"`
 	Email        string    `json:"email"`
+	Photo        string    `json:"photo"`
 	Status       int       `json:"status"`
 	Ctime        time.Time `orm:"auto_now_add;type(timestamp)" json:"ctime"` //type(datetime)  auto_now_add:第一次保存时候的时间  auto_now:model保存时都会对时间自动更新
 	Uptime       time.Time `json:"uptime" orm:"type(timestamp);auto_now_add;auto_now"`

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"myBeego/components/redis"
 	"myBeego/components/utils"
+	"myBeego/controllers"
+	"myBeego/models"
 	_ "myBeego/routers"
 
 	"github.com/astaxie/beego"
@@ -45,5 +47,13 @@ func main() {
 	filter := &utils.Filter{}
 	beego.InsertFilter("/user/*", beego.BeforeRouter, filter.FilterLoginStatus())
 
+	//日志初始化
+	models.LogsInit()
+
+	//异常处理 todo
+	beego.ErrorController(&controllers.ErrorController{})
+
+	//注册样式：URL 前缀和映射的目录
 	beego.Run("127.0.0.1:8080")
+
 }
