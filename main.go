@@ -28,7 +28,7 @@ func init() {
 	user := beego.AppConfig.String("db::userName")
 	pwd := beego.AppConfig.String("db::password")
 
-	dbcon := user + ":" + pwd + "@tcp(" + host + ":" + port + ")/" + dbname + "?charset=utf8"
+	dbcon := user + ":" + pwd + "@tcp(" + host + ":" + port + ")/" + dbname + "?charset=utf8&loc=Local"
 	fmt.Println(dbcon)
 
 	orm.RegisterDataBase("default", "mysql", dbcon)

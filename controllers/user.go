@@ -25,8 +25,6 @@ func (this *UserController) Login() {
 	resp := &utils.Response{}
 
 	this.ParseForm(loginParam)
-
-	fmt.Println(loginParam)
 	//定义用户模型
 	user := models.User{}
 
