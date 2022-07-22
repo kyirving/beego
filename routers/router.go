@@ -13,4 +13,5 @@ func init() {
 	beego.Router("/user/login", &controllers.UserController{}, "post:Login")
 	beego.Router("/user/register", &controllers.UserController{}, "post:Register")
 	beego.Router("/user/list", &controllers.UserController{}, "get:List")
+	beego.Router("/user/refresh_token", &controllers.UserController{}, "post:RefreshToken")
 }

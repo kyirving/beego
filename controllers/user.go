@@ -5,6 +5,7 @@ import (
 	"myBeego/components/redis"
 	"myBeego/components/utils"
 	"myBeego/models"
+	"strconv"
 	"time"
 
 	"github.com/astaxie/beego"
@@ -173,4 +174,77 @@ func (this *UserController) List() {
 
 	this.Data["json"] = resp.Success("操作成功", users)
 	this.ServeJSON()
+}
+
+/*
+	刷新token
+*/
+func (this *UserController) RefreshToken() {
+
+	o := orm.NewOrm()
+	resp := &utils.Response{}
+
+	userId, _ := this.GetInt("userid")
+	refresh_token := this.GetString("refresh_token")
+
+	if userId == 0 {
+		this.Data["json"] = resp.Error(utils.RESP_PARAMS_ERROR, "userid 不能为空!")
+		this.ServeJSON()
+		return
+	}
+
+	if refresh_token == "" {
+		this.Data["json"] = resp.Error(utils.RESP_PARAMS_ERROR, "refresh_token 不能为空!")
+		this.ServeJSON()
+		return
+	}
+
+	user := models.User{
+		Id: userId,
+	}
+	err := o.Read(&user)
+	if err != nil {
+		this.Data["json"] = resp.Error(utils.RESP_PARAMS_ERROR, "用户不存在")
+		this.ServeJSON()
+		return
+	}
+
+	key := fmt.Sprintf("%s:user:tokenInfo:%d", beego.AppConfig.String("appname"), userId)
+	refreshToken, err := redis.Rdb.HGet(key, "refreshToken").Result()
+	if err != nil || refreshToken != refresh_token {
+		this.Data["json"] = resp.Error(utils.RESP_PARAMS_ERROR, "refreshToken异常，请重新登录")
+		this.ServeJSON()
+		return
+	}
+
+	refreshExprice, _ := redis.Rdb.HGet(key, "refreshExprice").Result()
+	refresh_exprice, _ := strconv.ParseInt(refreshExprice, 10, 64)
+
+	if refresh_exprice < time.Now().Unix() {
+		this.Data["json"] = resp.Error(utils.RESP_PARAMS_ERROR, "refreshToken 已过期，请重新登录")
+		this.ServeJSON()
+		return
+	}
+
+	//生成token
+	NewAccessToken := utils.RandToken(50)
+	NewAccessExprice := time.Now().Unix() + 86400
+	NewRefreshToken := utils.RandToken(50)
+	NewRefreshExprice := time.Now().Unix() + (86400 * 7)
+	LoginResMsg := models.LoginResMsg{
+		UserId:        user.Id,
+		AccessToken:   NewAccessToken,
+		AccessExpire:  NewAccessExprice,
+		RefreshToken:  NewRefreshToken,
+		RefreshExpire: NewRefreshExprice,
+	}
+
+	redis.Rdb.HSet(key, "accessToken", LoginResMsg.AccessToken).Result()
+	redis.Rdb.HSet(key, "accessExprice", LoginResMsg.AccessExpire).Result()
+	redis.Rdb.HSet(key, "refreshToken", LoginResMsg.RefreshToken).Result()
+	redis.Rdb.HSet(key, "refreshExprice", LoginResMsg.RefreshExpire).Result()
+
+	this.Data["json"] = resp.Success("token刷新成功", LoginResMsg)
+	this.ServeJSON()
+
 }

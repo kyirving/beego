@@ -14,6 +14,7 @@ import (
 var NOTFILTERROUTER = []string{
 	"/user/login",
 	"/user/register",
+	"/user/refresh_token",
 }
 
 type Filter struct {
