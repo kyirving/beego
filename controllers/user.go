@@ -151,6 +151,9 @@ func (this *UserController) Register() {
 func (this *UserController) List() {
 	UserName := this.GetString("username")
 	Status, _ := this.GetInt("status")
+	Page, _ := this.GetInt("page", 1)
+	pageSize, _ := beego.AppConfig.Int("pageSize")
+	pageSize, _ = this.GetInt("page_size", pageSize)
 
 	o := orm.NewOrm()
 
@@ -166,16 +169,27 @@ func (this *UserController) List() {
 		qs.Filter("status", Status)
 	}
 
+	count, _ := qs.Count()
+
 	var users []*models.User
 	resp := &utils.Response{}
-	_, err := qs.All(&users)
+	_, err := qs.Offset((Page - 1) * pageSize).Limit(pageSize).All(&users)
 	if err != nil {
 		this.Data["json"] = resp.Error(utils.RESP_SYSTEM_BUSY, "操作异常")
 		this.ServeJSON()
 		return
 	}
 
-	this.Data["json"] = resp.Success("操作成功", users)
+	result := make(map[string]interface{}, 2)
+	pageInfo := &utils.PageInfo{
+		Page:     Page,
+		PageSize: pageSize,
+		Total:    count,
+	}
+	result["pageInfo"] = pageInfo
+	result["list"] = users
+
+	this.Data["json"] = resp.Success("操作成功", result)
 	this.ServeJSON()
 }
 

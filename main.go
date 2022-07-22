@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"myBeego/components/redis"
 	"myBeego/components/utils"
@@ -36,10 +35,6 @@ func init() {
 
 	//初始化redis
 	redis.Rdb = redis.ConnectRedisPool()
-}
-
-var Filter = func(ctx *context.Context) {
-	fmt.Println(ctx)
 }
 
 func main() {
