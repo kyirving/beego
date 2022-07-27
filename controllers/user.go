@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"fmt"
 	"myBeego/components/redis"
 	"myBeego/components/utils"
@@ -18,18 +19,27 @@ type UserController struct {
 	beego.Controller
 }
 
+type User struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 func (this *UserController) Login() {
 	o := orm.NewOrm()
 
 	var loginParam = &models.LoginParam{}
+	data := this.Ctx.Input.RequestBody
+	//json数据封装到user对象中
+	err := json.Unmarshal(data, &loginParam)
+	if err != nil {
+		fmt.Println("json.Unmarshal is err:", err.Error())
+	}
 	resp := &utils.Response{}
-
-	this.ParseForm(loginParam)
 	//定义用户模型
 	user := models.User{}
 
 	//查询单条记录
-	err := o.QueryTable(user.TableName()).Filter("username", loginParam.Username).One(&user)
+	err = o.QueryTable(user.TableName()).Filter("username", loginParam.Username).One(&user)
 	if err == orm.ErrNoRows {
 		this.Data["json"] = resp.Error(utils.RESP_PARAMS_ERROR, "用户名或密码错误(001)")
 		this.ServeJSON()
