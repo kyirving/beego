@@ -9,10 +9,15 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
+
+	"crypto/tls"
+
+	"gopkg.in/gomail.v2"
 )
 
 type UserController struct {
@@ -23,6 +28,10 @@ type User struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
+
+var (
+	wg = sync.WaitGroup{}
+)
 
 func (this *UserController) Login() {
 	o := orm.NewOrm()
@@ -105,38 +114,38 @@ func (this *UserController) Login() {
 
 func (this *UserController) Register() {
 	o := orm.NewOrm()
-	//this.ParseForm 用于解析到结构体
+	var registerParam models.RegisterParam
+	json.Unmarshal(this.Ctx.Input.RequestBody, &registerParam)
 
 	resp := &utils.Response{}
 
-	username := this.GetString("username")
-	password := this.GetString("password")
-	email := this.GetString("email")
-
-	if username == "" {
-		this.Data["json"] = resp.Error(utils.RESP_SYSTEM_BUSY, "操作异常")
+	if registerParam.Username == "" {
+		this.Data["json"] = resp.Error(utils.RESP_SYSTEM_BUSY, "操作异常(1)")
 		this.ServeJSON()
 		return
 	}
 
-	if password == "" {
-		this.Data["json"] = resp.Error(utils.RESP_SYSTEM_BUSY, "操作异常")
+	if registerParam.Email == "" {
+		this.Data["json"] = resp.Error(utils.RESP_SYSTEM_BUSY, "操作异常(3)")
 		this.ServeJSON()
 		return
 	}
 
-	if email == "" {
-		this.Data["json"] = resp.Error(utils.RESP_SYSTEM_BUSY, "操作异常")
-		this.ServeJSON()
-		return
-	}
+	//生产10位随机密码
+	password := utils.RandToken(10)
+	wg.Add(1)
+	go SendMail(registerParam.Username, password)
+	wg.Wait()
+
+	d := gomail.NewDialer("smtp.example.com", 587, "user", "123456")
+	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 
 	passwordHash, _ := models.HashPassword(password)
 
 	user := &models.User{
-		Username:     username,
+		Username:     registerParam.Username,
 		PasswordHash: passwordHash,
-		Email:        email,
+		Email:        registerParam.Email,
 		Status:       models.STATUS_SUCC,
 		Photo:        "static/img/default.jpeg",
 		// Ctime:        time.Now().Format("2006-01-02 03:04:05"),
@@ -149,6 +158,8 @@ func (this *UserController) Register() {
 		this.ServeJSON()
 		return
 	}
+
+	//发送邮件
 
 	this.Data["json"] = resp.Success("注册成功")
 	this.ServeJSON()
@@ -350,4 +361,60 @@ func (this *UserController) EditPhoto() {
 	this.Data["json"] = resp.Error(utils.RESP_SUCC, "修改头像成功")
 	this.ServeJSON()
 	return
+}
+
+//应该放到utils 文件中
+func SendMail(username string, pwd string) {
+	message := `
+    <p> Hello %s,</p>
+	
+		<p style="text-indent:2em">帐号已注册成功</p> 
+		<p style="text-indent:2em">请到%s登录</p>
+		<p style="text-indent:2em">初始化密码为:%s</P>
+	`
+
+	// QQ 邮箱：
+	// SMTP 服务器地址：smtp.qq.com（SSL协议端口：465/994 | 非SSL协议端口：25）
+	// 163 邮箱：
+	// SMTP 服务器地址：smtp.163.com（端口：25）
+	host := "smtp.163.com"
+	port := 25
+	userName := "15221478473@163.com"
+	password := "QLFKGNJFXVHXJRYM" //授权码
+
+	m := gomail.NewMessage()
+	m.SetHeader("From", userName) // 发件人
+	// m.SetHeader("From", "alias"+"<"+userName+">") // 增加发件人别名
+
+	m.SetHeader("To", userName) // 收件人，可以多个收件人，但必须使用相同的 SMTP 连接
+	// m.SetHeader("Cc", "******@qq.com")  // 抄送，可以多个
+	// m.SetHeader("Bcc", "******@qq.com") // 暗送，可以多个
+	m.SetHeader("Subject", "后台帐号注册成功") // 邮件主题
+
+	// text/html 的意思是将文件的 content-type 设置为 text/html 的形式，浏览器在获取到这种文件时会自动调用html的解析器对文件进行相应的处理。
+	// 可以通过 text/html 处理文本格式进行特殊处理，如换行、缩进、加粗等等
+	m.SetBody("text/html", fmt.Sprintf(message, userName, "http://127.0.0.1:8081", pwd))
+
+	// text/plain的意思是将文件设置为纯文本的形式，浏览器在获取到这种文件时并不会对其进行处理
+	// m.SetBody("text/plain", "纯文本")
+	// m.Attach("test.sh")   // 附件文件，可以是文件，照片，视频等等
+	// m.Attach("lolcatVideo.mp4") // 视频
+	// m.Attach("lolcat.jpg") // 照片
+
+	d := gomail.NewDialer(
+		host,
+		port,
+		userName,
+		password,
+	)
+	// 关闭SSL协议认证
+	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+
+	if err := d.DialAndSend(m); err != nil {
+		fmt.Println("d.DialAndSend err = ", err)
+	}
+
+	fmt.Println("sendmail success!!!")
+
+	wg.Done()
 }

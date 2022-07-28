@@ -26,6 +26,11 @@ type LoginParam struct {
 	Password string `form:"password"`
 }
 
+type RegisterParam struct {
+	Username string
+	Email    string
+}
+
 type LoginResMsg struct {
 	UserId        int    `json:"userId"`
 	AccessToken   string `json:"accessToken"`
