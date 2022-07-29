@@ -170,6 +170,8 @@ func (this *UserController) Register() {
 func (this *UserController) List() {
 	UserName := this.GetString("username")
 	Status, _ := this.GetInt("status")
+	sdate := this.GetString("sdate")
+	edate := this.GetString("edate")
 	Page, _ := this.GetInt("page", 1)
 	pageSize, _ := beego.AppConfig.Int("pageSize")
 	pageSize, _ = this.GetInt("page_size", pageSize)
@@ -181,13 +183,16 @@ func (this *UserController) List() {
 	qs := o.QueryTable(user.TableName())
 
 	if UserName != "" {
-		qs.Filter("username__contains", UserName)
+		qs = qs.Filter("username__contains", UserName)
 	}
 
 	if Status != 0 {
-		qs.Filter("status", Status)
+		qs = qs.Filter("status", Status)
 	}
 
+	if sdate != "" && edate != "" {
+		qs = qs.Filter("ctime__gte", sdate+" 00:00:00").Filter("ctime__lte", edate+" 23:59:59")
+	}
 	count, _ := qs.Count()
 
 	var users []*models.User
