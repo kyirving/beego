@@ -180,7 +180,7 @@ func (this *UserController) List() {
 
 	//获取QuerySeter对象，user为表名
 	user := &models.User{}
-	qs := o.QueryTable(user.TableName())
+	qs := o.QueryTable(user.TableName()).Filter("isdel", 1)
 
 	if UserName != "" {
 		qs = qs.Filter("username__contains", UserName)
@@ -364,6 +364,81 @@ func (this *UserController) EditPhoto() {
 	}
 
 	this.Data["json"] = resp.Error(utils.RESP_SUCC, "修改头像成功")
+	this.ServeJSON()
+	return
+}
+
+func (this *UserController) ChangeStatus() {
+	var (
+		o                 = orm.NewOrm()
+		resp              = &utils.Response{}
+		ChangeStatusparam = &models.ChangeStatusparam{}
+	)
+
+	//获取json数据
+	data := this.Ctx.Input.RequestBody
+	json.Unmarshal(data, &ChangeStatusparam)
+
+	user := models.User{
+		Id: ChangeStatusparam.Uid,
+	}
+
+	err := o.Read(&user)
+	if err != nil {
+		this.Data["json"] = resp.Error(utils.RESP_NOT_FOUND, "用户不存在")
+		this.ServeJSON()
+		return
+	}
+
+	user.Status = ChangeStatusparam.Status
+	if _, err = o.Update(&user); err != nil {
+		this.Data["json"] = resp.Error(utils.RESP_NOT_FOUND, "更新状态失败")
+		this.ServeJSON()
+		return
+	}
+
+	this.Data["json"] = resp.Error(utils.RESP_SUCC, "更新状态成功")
+	this.ServeJSON()
+	return
+}
+
+func (this *UserController) Delete() {
+	var (
+		o        = orm.NewOrm()
+		resp     = &utils.Response{}
+		delparam = &models.Deleteparam{}
+	)
+
+	//获取json数据
+	data := this.Ctx.Input.RequestBody
+	json.Unmarshal(data, &delparam)
+
+	fmt.Println(delparam)
+	if delparam.Uid == 0 {
+		this.Data["json"] = resp.Error(utils.RESP_NOT_FOUND, "用户id不能为空")
+		this.ServeJSON()
+		return
+	}
+
+	user := models.User{
+		Id: delparam.Uid,
+	}
+
+	err := o.Read(&user)
+	if err != nil {
+		this.Data["json"] = resp.Error(utils.RESP_NOT_FOUND, "用户不存在")
+		this.ServeJSON()
+		return
+	}
+
+	user.Isdel = 2
+	if _, err = o.Update(&user); err != nil {
+		this.Data["json"] = resp.Error(utils.RESP_NOT_FOUND, "删除失败")
+		this.ServeJSON()
+		return
+	}
+
+	this.Data["json"] = resp.Error(utils.RESP_SUCC, "删除成功")
 	this.ServeJSON()
 	return
 }

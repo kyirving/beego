@@ -26,6 +26,15 @@ type LoginParam struct {
 	Password string `form:"password"`
 }
 
+type ChangeStatusparam struct {
+	Uid    int
+	Status int
+}
+
+type Deleteparam struct {
+	Uid int
+}
+
 type RegisterParam struct {
 	Username string
 	Email    string
@@ -46,6 +55,7 @@ type User struct {
 	Email        string    `json:"email"`
 	Photo        string    `json:"photo"`
 	Status       int       `json:"status"`
+	Isdel        int       `json:"isdel"`
 	Ctime        time.Time `orm:"auto_now_add;type(timestamp)" json:"ctime"` //type(datetime)  auto_now_add:第一次保存时候的时间  auto_now:model保存时都会对时间自动更新
 	Uptime       time.Time `json:"uptime" orm:"type(timestamp);auto_now_add;auto_now"`
 }

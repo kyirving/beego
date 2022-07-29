@@ -15,4 +15,6 @@ func init() {
 	beego.Router("/user/list", &controllers.UserController{}, "get:List")
 	beego.Router("/user/refresh_token", &controllers.UserController{}, "post:RefreshToken")
 	beego.Router("/user/edit_photo", &controllers.UserController{}, "post:EditPhoto")
+	beego.Router("/user/change-status", &controllers.UserController{}, "post:ChangeStatus")
+	beego.Router("/user/delete", &controllers.UserController{}, "delete:Delete")
 }
