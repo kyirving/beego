@@ -1,0 +1,64 @@
+syntax = "proto3"; //必须指定protobuf协议版本号
+package myproto;
+option go_package ="./myproto"; //包名
+
+//命令行服务
+service Cmd {
+    // Exec 普通一元方法，待客户端实现
+    //rpc Exec(Request) returns (Response) {};
+
+    //服务端推送流，响应都以数据流式处理
+    rpc ExecStream(Request) returns (stream Response) {};
+}
+
+//文件上传服务
+service File {
+    // Upload 方法待客户端实现
+    //rpc Upload(Request) returns (Response) {};
+
+    //服务端推送流
+    //请求的是流，响应的是普通响应
+    rpc UploadFile(stream UpRequest) returns (UpResponse) {};
+    //请求的是普通请求，响应的是流式响应
+    rpc DownloadFile(DlRequest) returns (stream DlResponse) {};
+}
+
+// Request 请求结构
+message Request {
+    string method = 1; //1 执行普通命令 2 执行cron命令 
+    string command = 2;
+    string spec = 3; //cron 表达式
+}
+
+// Response 响应结构
+message Response {
+    string message = 1;
+}
+
+//文件上传请求
+message UpRequest {
+    string filepath =1;
+    bytes data = 2;
+}
+
+//文件上传响应 
+message UpResponse {
+    string filepath = 1;
+    int32 code =2; //状态码
+    string msg = 3; //消息
+}
+
+//文件下载请求
+message DlRequest {
+    string filepath = 1;
+}
+
+//文件下载响应
+message DlResponse {
+    bytes data = 1;
+    int32 code =2; //状态码
+    string msg = 3; //消息
+    
+}
+
+

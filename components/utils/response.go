@@ -27,8 +27,8 @@ type Json struct {
 
 //分页结构体
 type PageInfo struct {
-	Page     int `json:"page"`
-	PageSize int `json:"pageSize"`
+	Page     int   `json:"page"`
+	PageSize int   `json:"pageSize"`
 	Total    int64 `json:"total"`
 }
 

@@ -19,4 +19,7 @@ func init() {
 	beego.Router("/user/delete", &controllers.UserController{}, "delete:Delete")
 
 	beego.Router("/role/add", &controllers.RoleController{}, "post:Add")
+
+	//执行任务
+	beego.Router("/task/exec", &controllers.TaskController{}, "post:Exec")
 }
